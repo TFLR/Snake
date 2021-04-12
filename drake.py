@@ -1,8 +1,19 @@
 import pygame
 import pygame.examples.scaletest
 import random
+from pygame import mixer
 
-
+mixer.init()
+  
+# Loading the song
+sound = pygame.mixer.Sound('apple.wav')
+mixer.music.load("song.mp3")
+  
+# Setting the volume
+mixer.music.set_volume(0.05)
+  
+# Start playing the song
+mixer.music.play()
 
 pygame.init()
 #RGB values
@@ -15,10 +26,10 @@ display_height = 600
 #defining the snake
 image = pygame.image.load('./Head-snake.png')
 aimg = pygame.image.load('./Food-snake.png')
-block_size = 20
+block_size = 24
 #not a good idea to change the speed since it has to be equal with block_size, else the collision
 #of snake and apple will not match
-speed = 10
+speed = 13
 gameDisplay = pygame.display.set_mode((display_width,display_height))
 pygame.display.set_caption('Drake!')
 fps = 30
@@ -30,7 +41,8 @@ mediumfont = pygame.font.SysFont('comicsansms',50)
 largefont = pygame.font.SysFont('comicsansms',150)
 icon = pygame.image.load('./Food-snake.png')
 pygame.display.set_icon(icon)
-
+with open("highscore.txt","r") as f:
+    highscore = f.read()
  #drawing the snake
 def snake(block_size, snakeList ):
     if direction == 'right':
@@ -44,7 +56,7 @@ def snake(block_size, snakeList ):
 
     gameDisplay.blit(head,(snakeList[-1][0], snakeList[-1][1]))
     for XnY in snakeList[:-1]:
-        pygame.draw.rect(gameDisplay,white,(XnY[0],XnY[1],block_size ,block_size),width=0)
+        pygame.draw.rect(gameDisplay,white,(XnY[0],XnY[1],block_size ,block_size), width= 1, border_radius=50)
 
 def text_objects(msg,color,size):
     if size == 'small':
@@ -73,11 +85,13 @@ def game_intro():
     intro = True
 
     while intro:
+        with open("highscore.txt","r") as f:
+            highscore = f.read()
         gameDisplay.fill(black)
         message_to_screen('Welcome!', white , y_displace= -100, size='large')
-        message_to_screen('Press any Key to start!',white, y_displace = 30, size='medium')
-        message_to_screen('(P = Pause)',white,y_displace = 230,x_displace = 0, size='small')
-       # message_to_screen(str(pygame.mouse.get_pos()),black,y_displace = 255, x_displace = 0, size ='small')
+        message_to_screen('Press any Key to play Drake!',white, y_displace = 30, size='medium')
+        message_to_screen(('Highscore = '+ str(highscore)),white, y_displace = 130, size='medium')
+        message_to_screen('(P = Pause E =  Pause Music  R = Resume Music)',white,y_displace = 230,x_displace = 0, size='small')
 
 
         pygame.display.update()
@@ -123,6 +137,8 @@ def gameLoop():
     while not gameExit:
         #menu on gameover
         while gameOver == True:
+            with open("highscore.txt","w") as f:
+                f.write(str(highscore))
             gameDisplay.fill(black)
             message_to_screen('Game Over',white,0,-50,size='large')
             message_to_screen('Press Q to quit and C to continue',white,0,50,size='small')
@@ -163,9 +179,16 @@ def gameLoop():
                     direction ='down'
                 elif event.key == pygame.K_p:
                     pause()
+                elif event.key == pygame.K_ESCAPE:
+                    gameExit = True
+                
+                if event.key == pygame.K_e:
+                # Pausing the music
+                    mixer.music.pause()     
+                elif event.key == pygame.K_r:
+                # Resuming the music
+                    mixer.music.unpause()
             
-
-
         #checking if snake is out of window
         if lead_x >= display_width or lead_x < 0 or lead_y >= display_height or lead_y < 0:
             gameOver = True
@@ -174,8 +197,14 @@ def gameLoop():
         lead_y += lead_y_change
         #drawing the background screen
         gameDisplay.fill(black)
+        with open("highscore.txt","r") as f:
+            highscore = f.read()
+        score = int(snakeLength-1)
+        if int(score) >int(highscore):
+            highscore = score
+        message_to_screen(('Score: ' + str(score) ),white,-350,-270)
+        message_to_screen(('Highscore: ' + str(highscore) ),white,300,-270)
         #drawing the apple
-        message_to_screen(('Score: ' + str(snakeLength-1)),white,-350,-270)
         gameDisplay.blit(aimg,(randAppleX,randAppleY))
         snakeHead = []
         snakeHead.append(lead_x)
@@ -196,6 +225,7 @@ def gameLoop():
         if lead_x + block_size > randAppleX and lead_x < randAppleX + appleThickness:
             if lead_y + block_size > randAppleY and lead_y < randAppleY + appleThickness:
                # pygame.draw.rect(gameDisplay,(255,0,0),(randAppleX,randAppleY,appleThickness,appleThickness))
+                sound.play(loops=0)
                 randAppleX, randAppleY = randAppleGen()
                 snakeLength += 1
                 #pygame.display.update()
